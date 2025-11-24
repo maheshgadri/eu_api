@@ -76,7 +76,18 @@ const User = sequelize.define("User", {
   phone: { type: DataTypes.STRING, allowNull: false },
   password: { type: DataTypes.STRING, allowNull: false },
   gender: { type: DataTypes.STRING, allowNull: false },
-  dob: { type: DataTypes.DATEONLY, allowNull: false }
+  dob: { type: DataTypes.DATEONLY, allowNull: false },
+  about: { type: DataTypes.TEXT, allowNull: true },
+ hobbies: { type: DataTypes.TEXT, allowNull: true },
+ job_title: { type: DataTypes.STRING, allowNull: true },
+
+education: { type: DataTypes.STRING, allowNull: true },
+weight: { type: DataTypes.INTEGER, allowNull: true },
+height: { type: DataTypes.INTEGER, allowNull: true },
+interests: { type: DataTypes.TEXT, allowNull: true },
+relationship_goal: { type: DataTypes.STRING, allowNull: true },
+smoking: { type: DataTypes.STRING, allowNull: true },
+drinking: { type: DataTypes.STRING, allowNull: true },
 }, {
   tableName: "users"
 });
