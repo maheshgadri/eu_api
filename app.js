@@ -39,6 +39,7 @@ const path = require("path");
 const http = require("http");
 const { Server } = require("socket.io");
 const sequelize = require("./config/db");
+const inboxRoutes = require("./routes/inbox");
 
 // MODELS
 require("./models/User");
@@ -113,6 +114,12 @@ app.use("/api/feed", feedRouter);
 // CHAT ROUTES 🟢
 // ----------------------
 app.use("/api/chat", chatRoutes);
+
+
+//-----
+// Inbox
+
+app.use("/api/inbox", inboxRoutes);
 
 
 // ----------------------
