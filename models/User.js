@@ -88,6 +88,12 @@ interests: { type: DataTypes.TEXT, allowNull: true },
 relationship_goal: { type: DataTypes.STRING, allowNull: true },
 smoking: { type: DataTypes.STRING, allowNull: true },
 drinking: { type: DataTypes.STRING, allowNull: true },
+
+  // ✅ ADD HERE
+  is_verified: {
+    type: DataTypes.BOOLEAN,
+    defaultValue: false,
+  },
 }, {
   tableName: "users"
 });

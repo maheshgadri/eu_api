@@ -36,7 +36,8 @@ exports.getUserById = async (req, res) => {
       include: [{
         model: UserPhoto,
         as: "photos",
-        attributes: ["photo_url"]
+        // attributes: ["photo_url"]
+        attributes: ["id", "photo_url"]
       }]
     });
 

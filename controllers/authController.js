@@ -33,27 +33,68 @@ module.exports.signup = async (req, res) => {
     }
 };
 
-
 module.exports.login = async (req, res) => {
     try {
+        console.log("🔥 LOGIN HIT BODY:", req.body);
+
         const { email, password } = req.body;
 
-        // Find user using Sequelize
         const user = await User.findOne({ where: { email } });
-        if (!user) return res.status(404).json({ error: "User not found" });
+
+        console.log("DB USER:", user);
+
+        if (!user) {
+            console.log("❌ USER NOT FOUND");
+            return res.status(404).json({ error: "User not found" });
+        }
 
         const match = await bcrypt.compare(password, user.password);
-        if (!match) return res.status(400).json({ error: "Invalid password" });
+
+        console.log("PASSWORD MATCH:", match);
+
+        if (!match) {
+            console.log("❌ INVALID PASSWORD");
+            return res.status(400).json({ error: "Invalid password" });
+        }
 
         const token = jwt.sign({ id: user.id }, "SECRETKEY");
 
-        res.json({
+        console.log("✅ LOGIN SUCCESS");
+
+        return res.json({
             message: "Login success",
             token,
             userId: user.id
         });
+
     } catch (err) {
-        console.error("LOGIN ERROR:", err);
-        res.status(500).json({ error: err.message });
+        console.error("🔥 LOGIN ERROR:", err);
+        return res.status(500).json({
+            error: err.message,
+            stack: err.stack
+        });
     }
 };
+// module.exports.login = async (req, res) => {
+//     try {
+//         const { email, password } = req.body;
+//  console.log("🔥 LOGIN HIT BODY:", req.body);
+//         // Find user using Sequelize
+//         const user = await User.findOne({ where: { email } });
+//         if (!user) return res.status(404).json({ error: "User not found" });
+
+//         const match = await bcrypt.compare(password, user.password);
+//         if (!match) return res.status(400).json({ error: "Invalid password" });
+
+//         const token = jwt.sign({ id: user.id }, "SECRETKEY");
+
+//         res.json({
+//             message: "Login success",
+//             token,
+//             userId: user.id
+//         });
+//     } catch (err) {
+//         console.error("LOGIN ERROR:", err);
+//         res.status(500).json({ error: err.message });
+//     }
+// };

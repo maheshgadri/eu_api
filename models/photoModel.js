@@ -7,5 +7,11 @@ module.exports = {
 
     getPhotos: async (user_id) => {
         return await UserPhoto.findAll({ where: { user_id } });
-    }
+    },
+
+    deletePhoto: async (photoId) => {
+    return await UserPhoto.destroy({
+        where: { id: photoId }
+    });
+}
 };

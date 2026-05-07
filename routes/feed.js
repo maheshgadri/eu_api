@@ -61,7 +61,8 @@ router.get("/filter", async (req, res) => {
         {
           model: UserPhoto,
           as: "photos",
-          attributes: ["photo_url"],
+          // attributes: ["photo_url"],
+          attributes: ["id", "photo_url"],
           limit: 3
         }
       ]
@@ -87,7 +88,8 @@ router.get("/:id", async (req, res) => {
         {
           model: UserPhoto,
           as: "photos", // important: alias must match model association
-          attributes: ["photo_url"],
+          // attributes: ["photo_url"],
+          attributes: ["id", "photo_url"],
           limit: 3
         }
       ]

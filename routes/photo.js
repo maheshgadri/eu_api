@@ -39,5 +39,13 @@ router.post("/upload/:id", upload.array("photos", 3), photoController.uploadPhot
 
 router.get("/:id", photoController.getPhotos);
 
+router.delete("/:photoId", photoController.deletePhoto);
+
+router.post(
+  "/verify/:id",
+  upload.single("selfie"),
+  photoController.verifySelfie
+);
+
 module.exports = router;
 
