@@ -73,7 +73,7 @@ const UserPhoto = require("./UserPhoto"); // only import, don't require User its
 const User = sequelize.define("User", {
   fullname: { type: DataTypes.STRING, allowNull: false },
   email: { type: DataTypes.STRING, unique: true, allowNull: false },
-  phone: { type: DataTypes.STRING, allowNull: false },
+  phone: { type: DataTypes.STRING, allowNull: true },
   password: { type: DataTypes.STRING, allowNull: false },
   gender: { type: DataTypes.STRING, allowNull: false },
   dob: { type: DataTypes.DATEONLY, allowNull: false },
@@ -94,6 +94,12 @@ drinking: { type: DataTypes.STRING, allowNull: true },
     type: DataTypes.BOOLEAN,
     defaultValue: false,
   },
+
+fcm_token: {
+  type: DataTypes.STRING,
+  allowNull: true,
+},
+
 }, {
   tableName: "users"
 });

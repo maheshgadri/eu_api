@@ -114,13 +114,20 @@ router.get("/:userId", async (req, res) => {
       if (!friend) continue;
 
       // Get LAST MESSAGE sent by friend only
+      // const lastMsg = await Message.findOne({
+      //   where: {
+      //     conversation_id: convo.id,
+      //     sender_id: friendId
+      //   },
+      //   order: [["created_at", "DESC"]]
+      // });
+
       const lastMsg = await Message.findOne({
-        where: {
-          conversation_id: convo.id,
-          sender_id: friendId
-        },
-        order: [["created_at", "DESC"]]
-      });
+  where: {
+    conversation_id: convo.id
+  },
+  order: [["created_at", "DESC"]]
+});
 
       if (!lastMsg) continue;
 
@@ -129,20 +136,53 @@ router.get("/:userId", async (req, res) => {
         (Date.now() - new Date(lastMsg.created_at)) / 3600000
       );
 
-      inbox.push({
+    //   inbox.push({
+    //     user: {
+    //       id: friend.id,
+    //       fullname: friend.fullname,
+    //       photos: friend.photos.map(p => ({
+    //         photoUrl: p.photo_url
+    //       }))
+    //     },
+    //     lastMessage: lastMsg.message,
+    //     time: hoursAgo + " hr",
+    //     timeRaw: lastMsg.created_at 
+
+    //   });
+    // }
+    
+          inbox.push({
+        // user: {
+        //   id: friend.id,
+        //   fullname: friend.fullname,
+        //   photos: friend.photos.map(p => ({
+        //     photoUrl: p.photo_url
+        //   }))
+        // },
         user: {
-          id: friend.id,
-          fullname: friend.fullname,
-          photos: friend.photos.map(p => ({
-            photoUrl: p.photo_url
-          }))
-        },
+  id: friend.id || 0,
+  fullname: friend.fullname || "",
+  email: friend.email || "",       // ✅ REQUIRED
+  gender: friend.gender || "",     // ✅ REQUIRED
+  dob: friend.dob || "",           // ✅ REQUIRED
+  photos: (friend.photos || []).map(p => ({
+    photoUrl: p.photo_url || ""
+  }))
+},
         lastMessage: lastMsg.message,
-        time: hoursAgo + " hr"
+        time: hoursAgo + " hr",
+        timeRaw: lastMsg.created_at   // ✅ ADD THIS
       });
     }
 
+    // 🔥 ADD THIS BLOCK HERE
+    inbox.sort((a, b) => {
+      return new Date(b.timeRaw) - new Date(a.timeRaw);
+    });
+
     res.json(inbox);
+
+    // res.json(inbox);
 
   } catch (err) {
     console.error(err);

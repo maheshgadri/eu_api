@@ -2,6 +2,80 @@ const User = require("../models/User");
 const bcrypt = require("bcrypt");
 const jwt = require("jsonwebtoken");
 
+const admin = require("../config/firebase");
+
+
+module.exports.saveFcmToken = async (req, res) => {
+  try {
+    const { userId, fcmToken } = req.body;
+
+    if (!userId || !fcmToken) {
+      return res.status(400).json({ error: "Missing data" });
+    }
+
+    await User.update(
+      { fcm_token: fcmToken },
+      { where: { id: userId } }
+    );
+
+    return res.json({ message: "FCM token saved" });
+
+  } catch (err) {
+    console.error("SAVE TOKEN ERROR:", err);
+    res.status(500).json({ error: err.message });
+  }
+};
+
+module.exports.firebaseLogin = async (req, res) => {
+  try {
+    const token = req.headers.authorization?.split("Bearer ")[1];
+
+    if (!token) {
+      return res.status(401).json({ error: "No token provided" });
+    }
+
+    // ✅ Verify Firebase token
+    const decoded = await admin.auth().verifyIdToken(token);
+
+    const { uid, email, phone_number, name, picture } = decoded;
+
+    console.log("🔥 FIREBASE USER:", decoded);
+
+    // 🔍 Check if user exists
+    let user = null;
+
+    if (email) {
+      user = await User.findOne({ where: { email } });
+    } else if (phone_number) {
+      user = await User.findOne({ where: { phone: phone_number } });
+    }
+
+    // 🆕 Create user if not exists
+    if (!user) {
+      user = await User.create({
+        fullname: name || "User",
+        email: email || null,
+        phone: phone_number || null,
+        password: "firebase", // dummy
+        gender: "Other",
+        dob: "2000-01-01",
+        is_verified: true
+      });
+    }
+
+    return res.json({
+      message: "Login success",
+      token,
+      userId: user.id,
+      firebaseUid: uid
+    });
+
+  } catch (err) {
+    console.error("🔥 FIREBASE LOGIN ERROR:", err);
+    return res.status(401).json({ error: "Invalid Firebase token" });
+  }
+};
+
 module.exports.signup = async (req, res) => {
     try {
         const { fullname, email, phone, gender, dob, password } = req.body;

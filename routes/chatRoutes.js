@@ -26,4 +26,6 @@ router.get("/:conversation_id/messages", chatController.getMessages);
 // Send message
 router.post("/send", chatController.sendMessage);
 
+router.post("/accept", chatController.acceptRequest);
+
 module.exports = router;

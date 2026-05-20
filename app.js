@@ -40,13 +40,15 @@ const http = require("http");
 const { Server } = require("socket.io");
 const sequelize = require("./config/db");
 const inboxRoutes = require("./routes/inbox");
+const blockRoutes = require("./routes/block");
+const Block = require("./models/BlockedUser");
 
 // MODELS
 require("./models/User");
 require("./models/UserPhoto");
 require("./models/Conversation");   // 🟢 ADD
 require("./models/Message");        // 🟢 ADD
-
+require("./models/BlockedUser"); 
 // ROUTES
 const userRoutes = require('./routes/user');
 const feedRouter = require("./routes/feed");
@@ -60,6 +62,8 @@ app.use((req, res, next) => {
   console.log("➡️ HIT SERVER:", req.method, req.url);
   next();
 });
+
+app.use("/api/block", blockRoutes);
 
 // Create HTTP server for Socket.io
 const server = http.createServer(app);
@@ -83,12 +87,111 @@ io.on("connection", (socket) => {
   });
 
   // Receive + broadcast chat messages
-socket.on("send_message", (data) => {
-  const roomId = data.conversation_id || data.room; // support both
+// socket.on("send_message", (data) => {
+//   const roomId = data.conversation_id || data.room; // support both
 
-  console.log("📩 Socket message received:", data);
+//   console.log("📩 Socket message received:", data);
 
-  io.to(roomId).emit("receive_message", data);
+//   io.to(roomId).emit("receive_message", data);
+// });
+
+// socket.on("send_message", async (data) => {
+//   try {
+//     const { sender_id, receiver_id, conversation_id } = data;
+
+//     // 🔥 CHECK IF BLOCK EXISTS
+//     const isBlocked = await Block.findOne({
+//       where: {
+//         [Op.or]: [
+//           { blocker_id: sender_id, blocked_id: receiver_id },
+//           { blocker_id: receiver_id, blocked_id: sender_id }
+//         ]
+//       }
+//     });
+
+//     if (isBlocked) {
+//       console.log("🚫 Message blocked due to user block");
+//       return; // ❌ STOP MESSAGE
+//     }
+
+//     const roomId = conversation_id || data.room;
+
+//     io.to(roomId).emit("receive_message", data);
+
+//   } catch (err) {
+//     console.error("SOCKET BLOCK ERROR:", err);
+//   }
+// });
+
+
+//18/5/2026
+// socket.on("send_message", async (data) => {
+//   const { sender_id, receiver_id, conversation_id } = data;
+
+//   // 🔥 SAME BLOCK LOGIC
+//   const isBlocked = await Block.findOne({
+//     where: {
+//       blocker_id: receiver_id,
+//       blocked_id: sender_id
+//     }
+//   });
+
+//   if (isBlocked) {
+//     console.log("🚫 Socket message blocked");
+//     return;
+//   }
+
+//   const roomId = conversation_id || data.room;
+
+//   io.to(roomId).emit("receive_message", data);
+// });
+
+const Conversation = require("./models/Conversation");
+const Message = require("./models/Message");
+
+socket.on("send_message", async (data) => {
+  try {
+    const { sender_id, receiver_id, conversation_id, message } = data;
+
+    // ✅ 1. Get conversation
+    const convo = await Conversation.findByPk(conversation_id);
+
+    if (!convo) {
+      console.log("❌ Conversation not found");
+      return;
+    }
+
+    // ✅ 2. Block check
+    const isBlocked = await Block.findOne({
+      where: {
+        blocker_id: receiver_id,
+        blocked_id: sender_id
+      }
+    });
+
+    if (isBlocked) {
+      console.log("🚫 Socket message blocked");
+      return;
+    }
+
+    // 🔥 3. PENDING CHECK (MOST IMPORTANT)
+    if (convo.status === "pending") {
+      const msgCount = await Message.count({
+        where: { conversation_id }
+      });
+
+      if (msgCount >= 1) {
+        console.log("🚫 Waiting for user to accept request");
+        return;
+      }
+    }
+
+    // ✅ 4. Broadcast message
+    io.to(conversation_id).emit("receive_message", data);
+
+  } catch (err) {
+    console.error("SOCKET ERROR:", err);
+  }
 });
 
   socket.on("disconnect", () => {
