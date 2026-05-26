@@ -89,6 +89,16 @@ relationship_goal: { type: DataTypes.STRING, allowNull: true },
 smoking: { type: DataTypes.STRING, allowNull: true },
 drinking: { type: DataTypes.STRING, allowNull: true },
 
+is_online: {
+  type: DataTypes.BOOLEAN,
+  defaultValue: false,
+},
+
+last_seen: {
+  type: DataTypes.DATE,
+  allowNull: true,
+},
+
   // ✅ ADD HERE
   is_verified: {
     type: DataTypes.BOOLEAN,

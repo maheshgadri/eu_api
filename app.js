@@ -32,7 +32,7 @@
 // app.listen(5001, () => console.log("API running on port 5001"));
 
 
-
+const User = require("./models/User");
 const express = require("express");
 const cors = require("cors");
 const path = require("path");
@@ -76,126 +76,237 @@ const io = new Server(server, {
     origin: "*",
   },
 });
+/////26/5/2026
+// io.on("connection", (socket) => {
+//   console.log("User connected:", socket.id);
 
-io.on("connection", (socket) => {
-  console.log("User connected:", socket.id);
+//   // Join chat room
+//   socket.on("join_room", (conversation_id) => {
+//     socket.join(conversation_id);
+//     console.log(`User joined room: ${conversation_id}`);
+//   });
 
-  // Join chat room
-  socket.on("join_room", (conversation_id) => {
-    socket.join(conversation_id);
-    console.log(`User joined room: ${conversation_id}`);
-  });
+//   // Receive + broadcast chat messages
+// // socket.on("send_message", (data) => {
+// //   const roomId = data.conversation_id || data.room; // support both
 
-  // Receive + broadcast chat messages
-// socket.on("send_message", (data) => {
-//   const roomId = data.conversation_id || data.room; // support both
+// //   console.log("📩 Socket message received:", data);
 
-//   console.log("📩 Socket message received:", data);
+// //   io.to(roomId).emit("receive_message", data);
+// // });
 
-//   io.to(roomId).emit("receive_message", data);
-// });
+// // socket.on("send_message", async (data) => {
+// //   try {
+// //     const { sender_id, receiver_id, conversation_id } = data;
+
+// //     // 🔥 CHECK IF BLOCK EXISTS
+// //     const isBlocked = await Block.findOne({
+// //       where: {
+// //         [Op.or]: [
+// //           { blocker_id: sender_id, blocked_id: receiver_id },
+// //           { blocker_id: receiver_id, blocked_id: sender_id }
+// //         ]
+// //       }
+// //     });
+
+// //     if (isBlocked) {
+// //       console.log("🚫 Message blocked due to user block");
+// //       return; // ❌ STOP MESSAGE
+// //     }
+
+// //     const roomId = conversation_id || data.room;
+
+// //     io.to(roomId).emit("receive_message", data);
+
+// //   } catch (err) {
+// //     console.error("SOCKET BLOCK ERROR:", err);
+// //   }
+// // });
+
+
+// //18/5/2026
+// // socket.on("send_message", async (data) => {
+// //   const { sender_id, receiver_id, conversation_id } = data;
+
+// //   // 🔥 SAME BLOCK LOGIC
+// //   const isBlocked = await Block.findOne({
+// //     where: {
+// //       blocker_id: receiver_id,
+// //       blocked_id: sender_id
+// //     }
+// //   });
+
+// //   if (isBlocked) {
+// //     console.log("🚫 Socket message blocked");
+// //     return;
+// //   }
+
+// //   const roomId = conversation_id || data.room;
+
+// //   io.to(roomId).emit("receive_message", data);
+// // });
+
+// const Conversation = require("./models/Conversation");
+// const Message = require("./models/Message");
 
 // socket.on("send_message", async (data) => {
 //   try {
-//     const { sender_id, receiver_id, conversation_id } = data;
+//     const { sender_id, receiver_id, conversation_id, message } = data;
 
-//     // 🔥 CHECK IF BLOCK EXISTS
+//     // ✅ 1. Get conversation
+//     const convo = await Conversation.findByPk(conversation_id);
+
+//     if (!convo) {
+//       console.log("❌ Conversation not found");
+//       return;
+//     }
+
+//     // ✅ 2. Block check
 //     const isBlocked = await Block.findOne({
 //       where: {
-//         [Op.or]: [
-//           { blocker_id: sender_id, blocked_id: receiver_id },
-//           { blocker_id: receiver_id, blocked_id: sender_id }
-//         ]
+//         blocker_id: receiver_id,
+//         blocked_id: sender_id
 //       }
 //     });
 
 //     if (isBlocked) {
-//       console.log("🚫 Message blocked due to user block");
-//       return; // ❌ STOP MESSAGE
+//       console.log("🚫 Socket message blocked");
+//       return;
 //     }
 
-//     const roomId = conversation_id || data.room;
+//     // 🔥 3. PENDING CHECK (MOST IMPORTANT)
+//     if (convo.status === "pending") {
+//       const msgCount = await Message.count({
+//         where: { conversation_id }
+//       });
 
-//     io.to(roomId).emit("receive_message", data);
+//       if (msgCount >= 1) {
+//         console.log("🚫 Waiting for user to accept request");
+//         return;
+//       }
+//     }
+
+//     // ✅ 4. Broadcast message
+//     io.to(conversation_id).emit("receive_message", data);
 
 //   } catch (err) {
-//     console.error("SOCKET BLOCK ERROR:", err);
+//     console.error("SOCKET ERROR:", err);
 //   }
 // });
 
-
-//18/5/2026
-// socket.on("send_message", async (data) => {
-//   const { sender_id, receiver_id, conversation_id } = data;
-
-//   // 🔥 SAME BLOCK LOGIC
-//   const isBlocked = await Block.findOne({
-//     where: {
-//       blocker_id: receiver_id,
-//       blocked_id: sender_id
-//     }
+//   socket.on("disconnect", () => {
+//     console.log("User disconnected");
 //   });
-
-//   if (isBlocked) {
-//     console.log("🚫 Socket message blocked");
-//     return;
-//   }
-
-//   const roomId = conversation_id || data.room;
-
-//   io.to(roomId).emit("receive_message", data);
 // });
+//////26/5/2026
 
-const Conversation = require("./models/Conversation");
-const Message = require("./models/Message");
+io.on("connection", async (socket) => {
 
-socket.on("send_message", async (data) => {
-  try {
-    const { sender_id, receiver_id, conversation_id, message } = data;
+  // ✅ GET USER ID FROM FLUTTER SOCKET
+  const userId = socket.handshake.query.userId;
 
-    // ✅ 1. Get conversation
-    const convo = await Conversation.findByPk(conversation_id);
+  console.log("🟢 User connected:", userId);
 
-    if (!convo) {
-      console.log("❌ Conversation not found");
-      return;
-    }
+  // ================= ONLINE =================
 
-    // ✅ 2. Block check
-    const isBlocked = await Block.findOne({
-      where: {
-        blocker_id: receiver_id,
-        blocked_id: sender_id
+  if (userId) {
+    await User.update(
+      {
+        is_online: true,
+      },
+      {
+        where: { id: userId },
       }
-    });
+    );
+  }
 
-    if (isBlocked) {
-      console.log("🚫 Socket message blocked");
-      return;
-    }
+  // ================= JOIN ROOM =================
 
-    // 🔥 3. PENDING CHECK (MOST IMPORTANT)
-    if (convo.status === "pending") {
-      const msgCount = await Message.count({
-        where: { conversation_id }
-      });
+  socket.on("join_room", (conversation_id) => {
+    socket.join(conversation_id);
 
-      if (msgCount >= 1) {
-        console.log("🚫 Waiting for user to accept request");
+    console.log(`User joined room: ${conversation_id}`);
+  });
+
+  // ================= SEND MESSAGE =================
+
+  const Conversation = require("./models/Conversation");
+  const Message = require("./models/Message");
+
+  socket.on("send_message", async (data) => {
+
+    try {
+
+      const {
+        sender_id,
+        receiver_id,
+        conversation_id,
+        message,
+      } = data;
+
+      // ✅ GET CONVERSATION
+      const convo = await Conversation.findByPk(conversation_id);
+
+      if (!convo) {
+        console.log("❌ Conversation not found");
         return;
       }
+
+      // ✅ BLOCK CHECK
+      const isBlocked = await Block.findOne({
+        where: {
+          blocker_id: receiver_id,
+          blocked_id: sender_id,
+        },
+      });
+
+      if (isBlocked) {
+        console.log("🚫 Socket message blocked");
+        return;
+      }
+
+      // ✅ PENDING REQUEST CHECK
+      if (convo.status === "pending") {
+
+        const msgCount = await Message.count({
+          where: { conversation_id },
+        });
+
+        if (msgCount >= 1) {
+          console.log("🚫 Waiting for user accept");
+          return;
+        }
+      }
+
+      // ✅ SEND MESSAGE
+      io.to(conversation_id).emit(
+        "receive_message",
+        data
+      );
+
+    } catch (err) {
+      console.error("SOCKET ERROR:", err);
     }
+  });
 
-    // ✅ 4. Broadcast message
-    io.to(conversation_id).emit("receive_message", data);
+  // ================= DISCONNECT =================
 
-  } catch (err) {
-    console.error("SOCKET ERROR:", err);
-  }
-});
+  socket.on("disconnect", async () => {
 
-  socket.on("disconnect", () => {
-    console.log("User disconnected");
+    console.log("🔴 User disconnected:", userId);
+
+    if (userId) {
+
+      await User.update(
+        {
+          is_online: false,
+          last_seen: new Date(),
+        },
+        {
+          where: { id: userId },
+        }
+      );
+    }
   });
 });
 
@@ -233,7 +344,8 @@ app.use("/api/inbox", inboxRoutes);
 // ----------------------
 // SYNC DATABASE
 // ----------------------
-sequelize.sync({ alter: true })
+// sequelize.sync({ alter: true })
+sequelize.sync()
   .then(() => console.log("MySQL tables synced 👍"))
   .catch(err => console.log("DB Sync Error:", err));
 

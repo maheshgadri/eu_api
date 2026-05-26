@@ -41,14 +41,83 @@ const { Op } = require("sequelize");
 
 
 
+// router.get("/filter", async (req, res) => {
+//   try {
+//     const { minAge, maxAge, lookingFor, excludeUserId,  onlineOnly, } = req.query;
+
+//     const loggedUserId = Number(excludeUserId || 0);
+
+//     // 🔥 BLOCK LIST
+//     const blocked = await Block.findAll({
+//       where: {
+//         [Op.or]: [
+//           { blocker_id: loggedUserId },
+//           { blocked_id: loggedUserId }
+//         ]
+//       }
+//     });
+
+//     const blockedIds = blocked.map(b =>
+//       b.blocker_id === loggedUserId ? b.blocked_id : b.blocker_id
+//     );
+
+//     // DOB calculation
+//     const today = new Date();
+//     const maxDob = new Date(today.getFullYear() - minAge, today.getMonth(), today.getDate());
+//     const minDob = new Date(today.getFullYear() - maxAge, today.getMonth(), today.getDate());
+
+//     const users = await User.findAll({
+//       where: {
+//         id: {
+//           [Op.ne]: loggedUserId,
+//           [Op.notIn]: blockedIds   // ✅ ADD THIS
+//         },
+//         gender: lookingFor ? lookingFor : { [Op.ne]: null },
+//         dob: {
+//           [Op.between]: [
+//             minDob.toISOString().split("T")[0],
+//             maxDob.toISOString().split("T")[0]
+//           ]
+//         }
+//       },
+//       attributes: ["id", "fullname", "email", "gender", "dob",  "is_online",
+//   "last_seen"],
+//       include: [
+//         {
+//           model: UserPhoto,
+//           as: "photos",
+//           attributes: ["id", "photo_url"],
+//           limit: 3
+//         }
+//       ]
+//     });
+
+//     res.json({ users });
+
+//   } catch (err) {
+//     console.error("Filter Error:", err);
+//     res.status(500).json({ error: err.message });
+//   }
+// });
+
 router.get("/filter", async (req, res) => {
+
   try {
-    const { minAge, maxAge, lookingFor, excludeUserId } = req.query;
+
+    const {
+      minAge,
+      maxAge,
+      lookingFor,
+      excludeUserId,
+      onlineOnly,
+    } = req.query;
 
     const loggedUserId = Number(excludeUserId || 0);
 
-    // 🔥 BLOCK LIST
+    // ================= BLOCK LIST =================
+
     const blocked = await Block.findAll({
+
       where: {
         [Op.or]: [
           { blocker_id: loggedUserId },
@@ -58,44 +127,120 @@ router.get("/filter", async (req, res) => {
     });
 
     const blockedIds = blocked.map(b =>
-      b.blocker_id === loggedUserId ? b.blocked_id : b.blocker_id
+      b.blocker_id === loggedUserId
+        ? b.blocked_id
+        : b.blocker_id
     );
 
-    // DOB calculation
+    // ================= DOB CALCULATION =================
+
     const today = new Date();
-    const maxDob = new Date(today.getFullYear() - minAge, today.getMonth(), today.getDate());
-    const minDob = new Date(today.getFullYear() - maxAge, today.getMonth(), today.getDate());
+
+    const maxDob = new Date(
+      today.getFullYear() - minAge,
+      today.getMonth(),
+      today.getDate()
+    );
+
+    const minDob = new Date(
+      today.getFullYear() - maxAge,
+      today.getMonth(),
+      today.getDate()
+    );
+
+    // ================= WHERE CONDITION =================
+
+    const whereCondition = {
+
+      id: {
+        [Op.ne]: loggedUserId,
+        [Op.notIn]: blockedIds,
+      },
+
+      dob: {
+        [Op.between]: [
+          minDob.toISOString().split("T")[0],
+          maxDob.toISOString().split("T")[0],
+        ],
+      },
+    };
+
+    // ================= GENDER FILTER =================
+
+    if (lookingFor) {
+      whereCondition.gender = lookingFor;
+    }
+
+    // ================= ONLINE FILTER =================
+
+    if (onlineOnly === "true") {
+      whereCondition.is_online = true;
+    }
+
+    // ================= FETCH USERS =================
+
+    console.log("FILTER VALUES:");
+console.log("minAge:", minAge);
+console.log("maxAge:", maxAge);
+console.log("lookingFor:", lookingFor);
+console.log("loggedUserId:", loggedUserId);
+
+console.log("BLOCKED IDS:", blockedIds);
+
+console.log("DOB RANGE:");
+console.log("minDob:", minDob);
+console.log("maxDob:", maxDob);
 
     const users = await User.findAll({
-      where: {
-        id: {
-          [Op.ne]: loggedUserId,
-          [Op.notIn]: blockedIds   // ✅ ADD THIS
-        },
-        gender: lookingFor ? lookingFor : { [Op.ne]: null },
-        dob: {
-          [Op.between]: [
-            minDob.toISOString().split("T")[0],
-            maxDob.toISOString().split("T")[0]
-          ]
-        }
-      },
-      attributes: ["id", "fullname", "email", "gender", "dob"],
+
+      
+
+      where: whereCondition,
+
+      attributes: [
+        "id",
+        "fullname",
+        "email",
+        "gender",
+        "dob",
+        "is_online",
+        "last_seen",
+      ],
+
       include: [
         {
           model: UserPhoto,
           as: "photos",
           attributes: ["id", "photo_url"],
-          limit: 3
-        }
-      ]
+          limit: 3,
+        },
+      ],
     });
+
+
+console.log("========== FILTERED USERS ==========");
+
+users.forEach((user) => {
+
+  console.log({
+    id: user.id,
+    name: user.fullname,
+    gender: user.gender,
+    online: user.is_online,
+    last_seen: user.last_seen,
+  });
+
+});
 
     res.json({ users });
 
   } catch (err) {
+
     console.error("Filter Error:", err);
-    res.status(500).json({ error: err.message });
+
+    res.status(500).json({
+      error: err.message,
+    });
   }
 });
 // -------------------- Filtered Feed --------------------
@@ -190,7 +335,9 @@ router.get("/:id", async (req, res) => {
           [Op.notIn]: blockedIds   // ✅ IMPORTANT
         }
       },
-      attributes: ["id", "fullname", "email", "gender", "dob"],
+      attributes: ["id", "fullname", "email", "gender", "dob",  "is_online",
+  "last_seen"
+],
       include: [
         {
           model: UserPhoto,
