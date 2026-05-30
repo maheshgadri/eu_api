@@ -34,7 +34,7 @@
 const Block = require("../models/BlockedUser");
 const router = require("express").Router();
 const User = require("../models/User");
-const UserPhoto = require("../models/UserPhoto");
+const UserPhoto = require("../models/UserPhoto"); 
 const { Op } = require("sequelize");
 
 
@@ -205,6 +205,12 @@ console.log("maxDob:", maxDob);
         "dob",
         "is_online",
         "last_seen",
+
+        "country",
+        "looking_for",
+        "marital_status",
+        "is_verified"
+
       ],
 
       include: [
@@ -336,7 +342,11 @@ router.get("/:id", async (req, res) => {
         }
       },
       attributes: ["id", "fullname", "email", "gender", "dob",  "is_online",
-  "last_seen"
+  "last_seen","country",
+        "looking_for",
+        "marital_status",
+        "is_verified"
+
 ],
       include: [
         {

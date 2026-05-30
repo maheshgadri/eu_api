@@ -56,7 +56,7 @@ try:
     print(distance)  # send score to Node
 
     # ✅ RELAXED threshold
-    if distance < 0.65:
+    if distance < 0.75:
         print("MATCH")
     else:
         print("NO_MATCH")

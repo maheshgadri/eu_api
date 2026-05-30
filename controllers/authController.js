@@ -1,6 +1,14 @@
 const User = require("../models/User");
 const bcrypt = require("bcrypt");
 const jwt = require("jsonwebtoken");
+const geoip = require("geoip-lite");
+
+
+const countries = require("i18n-iso-countries");
+
+countries.registerLocale(
+  require("i18n-iso-countries/langs/en.json")
+);
 
 const admin = require("../config/firebase");
 
@@ -41,6 +49,22 @@ module.exports.firebaseLogin = async (req, res) => {
 
     console.log("🔥 FIREBASE USER:", decoded);
 
+      // ✅ Detect country from IP
+    const ip =
+      req.headers["x-forwarded-for"] ||
+      req.socket.remoteAddress;
+
+    console.log("🌍 USER IP:", ip);
+
+    const geo = geoip.lookup(ip);
+
+    console.log("🌍 GEO:", geo);
+
+    const country =
+      countries.getName(geo?.country, "en") || "India";
+
+    console.log("🌍 COUNTRY:", country);
+
     // 🔍 Check if user exists
     let user = null;
 
@@ -59,16 +83,34 @@ module.exports.firebaseLogin = async (req, res) => {
         password: "firebase", // dummy
         gender: "Other",
         dob: "2000-01-01",
-        is_verified: true
+        is_verified: true,
+        country: country,
       });
     }
 
+    // return res.json({
+    //   message: "Login success",
+    //   token,
+    //   userId: user.id,
+    //   firebaseUid: uid
+    // });
+
     return res.json({
-      message: "Login success",
-      token,
-      userId: user.id,
-      firebaseUid: uid
-    });
+  message: "Login success",
+  token,
+  userId: user.id,
+  firebaseUid: uid,
+
+  fullname: user.fullname,
+  email: user.email,
+  phone: user.phone,
+  gender: user.gender,
+  dob: user.dob,
+  about: user.about,
+  country: user.country,
+
+  profile_completed: user.profile_completed,
+});
 
   } catch (err) {
     console.error("🔥 FIREBASE LOGIN ERROR:", err);

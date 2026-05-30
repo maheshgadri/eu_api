@@ -89,6 +89,17 @@ relationship_goal: { type: DataTypes.STRING, allowNull: true },
 smoking: { type: DataTypes.STRING, allowNull: true },
 drinking: { type: DataTypes.STRING, allowNull: true },
 
+
+// ➕ ADD NEW COLUMNS HERE
+  country: { type: DataTypes.STRING, allowNull: true, defaultValue: "India" },
+  looking_for: { type: DataTypes.STRING, allowNull: true }, // Relationship, Friendship, Marriage
+  marital_status: { type: DataTypes.STRING, allowNull: true }, // Single, Divorced, Widowed, etc.
+  
+profile_completed: {
+  type: DataTypes.BOOLEAN,
+  defaultValue: false,
+},
+
 is_online: {
   type: DataTypes.BOOLEAN,
   defaultValue: false,

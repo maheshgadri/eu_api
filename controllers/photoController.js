@@ -95,6 +95,54 @@ module.exports.deletePhoto = async (req, res) => {
 };
 
 
+// module.exports.verifySelfie = async (req, res) => {
+//   try {
+//     const userId = req.params.id;
+
+//     if (!req.file) {
+//       return res.status(400).json({ error: "Selfie required" });
+//     }
+
+//     const selfiePath = req.file.path;
+
+//     // Get user first photo
+//     const photos = await photoModel.getPhotos(userId);
+//     if (!photos.length) {
+//       return res.status(400).json({ error: "No profile photo found" });
+//     }
+
+//     const storedPath = "." + photos[0].photo_url;
+
+//   execFile(
+//   "./venv/bin/python",
+//   ["verify_face.py", storedPath, selfiePath],
+//       async (err, stdout) => {
+//         if (err) {
+//           console.error(err);
+//           return res.status(500).json({ error: "Python error" });
+//         }
+
+//         const result = stdout.trim();
+
+//         if (result.startsWith === "MATCH") {
+//           await User.update(
+//             { is_verified: true },
+//             { where: { id: userId } }
+//           );
+
+//           return res.json({ verified: true });
+//         }
+
+//         res.json({ verified: false });
+//       }
+//     );
+
+//   } catch (err) {
+//     console.error(err);
+//     res.status(500).json({ error: err.message });
+//   }
+// };
+
 module.exports.verifySelfie = async (req, res) => {
   try {
     const userId = req.params.id;
@@ -105,40 +153,64 @@ module.exports.verifySelfie = async (req, res) => {
 
     const selfiePath = req.file.path;
 
-    // Get user first photo
+    // Get user photos
     const photos = await photoModel.getPhotos(userId);
+
     if (!photos.length) {
-      return res.status(400).json({ error: "No profile photo found" });
+      return res.status(400).json({
+        error: "No profile photo found"
+      });
     }
 
     const storedPath = "." + photos[0].photo_url;
 
-    execFile(
-      "python3",
-      ["verify_face.py", storedPath, selfiePath],
+    // ✅ DEBUG LOGS
+    console.log("Stored Image:", storedPath);
+    console.log("Selfie Image:", selfiePath);
+
+   execFile(
+  "/Users/maheshgadri/eu_api/venv/bin/python",
+  ["verify_face.py", storedPath, selfiePath],
+
       async (err, stdout) => {
+
         if (err) {
-          console.error(err);
-          return res.status(500).json({ error: "Python error" });
+          console.error("PYTHON ERROR:", err);
+
+          return res.status(500).json({
+            error: "Python error"
+          });
         }
 
         const result = stdout.trim();
 
-        if (result === "MATCH") {
+        // ✅ DEBUG RESULT
+        console.log("PYTHON RESULT:", result);
+
+        // ✅ FIXED
+        if (result.includes("MATCH")) {
+
           await User.update(
             { is_verified: true },
             { where: { id: userId } }
           );
 
-          return res.json({ verified: true });
+          return res.json({
+            verified: true
+          });
         }
 
-        res.json({ verified: false });
+        return res.json({
+          verified: false
+        });
       }
     );
 
   } catch (err) {
     console.error(err);
-    res.status(500).json({ error: err.message });
+
+    res.status(500).json({
+      error: err.message
+    });
   }
 };

@@ -54,17 +54,48 @@ exports.getUserById = async (req, res) => {
 };
 
 // NEW: updateUserById
+// exports.updateUserById = async (req, res) => {
+//   try {
+//     const user = await User.findByPk(req.params.id);
+
+//     if (!user) return res.status(404).json({ error: "User not found" });
+
+//     await user.update(req.body);
+
+//     res.json({ message: "Profile updated", user });
+//   } catch (err) {
+//     console.error("Update Error:", err);
+//     res.status(500).json({ error: err.message });
+//   }
+// };
+
 exports.updateUserById = async (req, res) => {
   try {
+
     const user = await User.findByPk(req.params.id);
 
-    if (!user) return res.status(404).json({ error: "User not found" });
+    if (!user) {
+      return res.status(404).json({
+        error: "User not found"
+      });
+    }
 
-    await user.update(req.body);
+    await user.update({
+      ...req.body,
+      profile_completed: true,
+    });
+   console.log("UPDATED");
+    res.json({
+      message: "Profile updated",
+      user,
+    });
 
-    res.json({ message: "Profile updated", user });
   } catch (err) {
+
     console.error("Update Error:", err);
-    res.status(500).json({ error: err.message });
+
+    res.status(500).json({
+      error: err.message
+    });
   }
 };
